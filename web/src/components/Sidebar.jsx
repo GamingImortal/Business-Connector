@@ -1,97 +1,80 @@
 import { useState } from 'react'
 import Avatar from './Avatar.jsx'
 
-const FILTERS = ['All', 'Unread', 'Auto-reply on']
-
-export default function Sidebar({ businesses, messages, activeId, unread, typing, role, onRoleChange, onSelect, onReset }) {
+// Chat list. Items are { id, name, avatar, color, preview, previewMine, previewStatus, time, unread, typing, search }.
+export default function Sidebar({ items, activeId, role, owner, onRoleChange, onSelect, onLogout, filters, emptyText }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('All')
 
   const q = query.trim().toLowerCase()
-  const list = businesses.filter((b) => {
-    if (q && !`${b.name} ${b.category}`.toLowerCase().includes(q)) return false
-    if (filter === 'Unread' && !unread[b.id]) return false
-    if (filter === 'Auto-reply on' && !b.autoReply.enabled) return false
-    return true
-  })
+  const active = filters.find((f) => f.label === filter) || filters[0]
+  const list = items.filter((it) => (!q || it.search.toLowerCase().includes(q)) && (!active || active.test(it)))
 
   return (
     <aside className={`sidebar ${activeId ? 'has-active' : ''}`}>
       <header className="sidebar-header">
         <div className="me">
-          <Avatar emoji={role === 'customer' ? '🙂' : '🏪'} color="#6b7c85" />
-          <span className="app-title">Business Connect</span>
+          <Avatar emoji={role === 'customer' ? '🙂' : owner?.business.avatar || '🏪'} color={role === 'customer' ? '#6b7c85' : owner?.business.color} />
+          <span className="app-title">{role === 'business' && owner ? owner.business.name : 'Business Connect'}</span>
         </div>
-        <button className="icon-btn" title="Reset demo data" onClick={onReset}>↺</button>
+        {role === 'business' && owner && (
+          <>
+            <a className="icon-btn" href="http://localhost:5174" target="_blank" rel="noreferrer" title="Open the business dashboard">📊</a>
+            <button className="icon-btn" title="Log out" onClick={onLogout}>🚪</button>
+          </>
+        )}
       </header>
 
       <div className="role-switch" role="tablist" aria-label="View as">
         <span>View as:</span>
         {['customer', 'business'].map((r) => (
-          <button
-            key={r}
-            className={role === r ? 'active' : ''}
-            onClick={() => onRoleChange(r)}
-          >
-            {r === 'customer' ? '🙂 Customer' : '🏪 Business'}
+          <button key={r} className={role === r ? 'active' : ''} onClick={() => onRoleChange(r)}>
+            {r === 'customer' ? '🙂 Customer' : '🏪 Business owner'}
           </button>
         ))}
       </div>
 
+      {filters.length > 0 && <>
       <div className="search">
         <span className="search-icon">🔍</span>
-        <input
-          placeholder="Search businesses"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <input placeholder={role === 'customer' ? 'Search businesses' : 'Search chats'} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       <div className="filters">
-        {FILTERS.map((f) => (
-          <button key={f} className={filter === f ? 'chip active' : 'chip'} onClick={() => setFilter(f)}>
-            {f}
+        {filters.map((f) => (
+          <button key={f.label} className={filter === f.label ? 'chip active' : 'chip'} onClick={() => setFilter(f.label)}>
+            {f.label}
           </button>
         ))}
       </div>
+      </>}
 
       <ul className="chat-list">
-        {list.map((b) => {
-          const history = messages[b.id] || []
-          const last = history[history.length - 1]
-          const count = unread[b.id] || 0
-          return (
-            <li
-              key={b.id}
-              className={`chat-item ${b.id === activeId ? 'active' : ''}`}
-              onClick={() => onSelect(b.id)}
-            >
-              <Avatar emoji={b.avatar} color={b.color} />
-              <div className="chat-item-body">
-                <div className="chat-item-top">
-                  <span className="chat-name">{b.name}</span>
-                  <span className={`chat-time ${count ? 'unread' : ''}`}>{last?.time || ''}</span>
-                </div>
-                <div className="chat-item-bottom">
-                  <span className="chat-preview">
-                    {typing[b.id] ? (
-                      <em className="typing-text">typing…</em>
-                    ) : last ? (
-                      <>
-                        {last.from === 'client' && <Ticks status={last.status} />}
-                        {last.text.split('\n')[0]}
-                      </>
-                    ) : (
-                      <span className="muted">{b.category} · ⭐ {b.rating}</span>
-                    )}
-                  </span>
-                  {count > 0 && <span className="badge">{count}</span>}
-                </div>
+        {list.map((it) => (
+          <li key={it.id} className={`chat-item ${it.id === activeId ? 'active' : ''}`} onClick={() => onSelect(it.id)}>
+            <Avatar emoji={it.avatar} color={it.color} />
+            <div className="chat-item-body">
+              <div className="chat-item-top">
+                <span className="chat-name">{it.name}</span>
+                <span className={`chat-time ${it.unread ? 'unread' : ''}`}>{it.time}</span>
               </div>
-            </li>
-          )
-        })}
-        {list.length === 0 && <li className="no-results">No businesses found</li>}
+              <div className="chat-item-bottom">
+                <span className="chat-preview">
+                  {it.typing ? (
+                    <em className="typing-text">typing…</em>
+                  ) : (
+                    <>
+                      {it.previewMine && <Ticks status={it.previewStatus} />}
+                      {it.preview}
+                    </>
+                  )}
+                </span>
+                {it.unread > 0 && <span className="badge">{it.unread}</span>}
+              </div>
+            </div>
+          </li>
+        ))}
+        {list.length === 0 && <li className="no-results">{emptyText}</li>}
       </ul>
     </aside>
   )
