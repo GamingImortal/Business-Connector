@@ -1,0 +1,9 @@
+# Office lock files
+~$*
+
+.DS_Store
+node_modules
+dist
+
+# SQLite database created by the backend
+business-connect.db*
