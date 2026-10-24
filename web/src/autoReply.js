@@ -1,5 +1,5 @@
-// Works out which automated replies a business sends for a customer's message.
-// Returns an array of reply texts (possibly empty).
+// Previews which keyword replies would be sent for a customer's message.
+// The backend does the real matching (and also answers from listed prices, hours and bookings).
 export function getAutoReplies(autoReply, text, history) {
   if (!autoReply?.enabled) return []
 
@@ -28,8 +28,4 @@ export function getAutoReplies(autoReply, text, history) {
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-export function nowTime() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
