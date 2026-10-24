@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 "# Business-Connector" 
 =======
 # Business Connect
@@ -319,7 +318,3 @@ How bookings are checked: a booking must fall within opening hours, and the slot
 > **Demo-grade security:** PINs are salted and hashed, and 5 wrong PINs lock a business out for 5 minutes. But customers are identified only by an ID stored in their browser, and there is no HTTPS. Add real authentication before using this with real customers.
 
 ---
-
-## 12. Team
-_Add team members and roles here._
->>>>>>> shoan
