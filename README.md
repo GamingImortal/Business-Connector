@@ -1,5 +1,3 @@
-"# Business-Connector" 
-=======
 # Business Connect
 
 > **Find, chat with, and book local service providers — all from one chat window.**
