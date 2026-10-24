@@ -17,9 +17,15 @@ export default function AutoReplyPanel({ business, onSave, onClose }) {
     update({ rules: [...draft.rules, { id: `r${Date.now()}`, keywords: '', reply: '' }] })
   const removeRule = (id) => update({ rules: draft.rules.filter((r) => r.id !== id) })
 
-  const save = () => {
-    onSave({ ...draft, rules: draft.rules.filter((r) => r.keywords.trim() && r.reply.trim()) })
-    setSaved(true)
+  const [error, setError] = useState('')
+  const save = async () => {
+    setError('')
+    try {
+      await onSave({ ...draft, rules: draft.rules.filter((r) => r.keywords.trim() && r.reply.trim()) })
+      setSaved(true)
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   const preview = testText.trim() ? getAutoReplies({ ...draft, enabled: true }, testText, [{ from: 'business' }]) : []
@@ -39,7 +45,7 @@ export default function AutoReplyPanel({ business, onSave, onClose }) {
         <label className="toggle-row">
           <span>
             <strong>Auto-reply</strong>
-            <small>{draft.enabled ? 'Customers get instant replies' : 'All replies are manual'}</small>
+            <small>{draft.enabled ? 'Customers get instant replies, including prices, hours and bookings' : 'All replies are manual'}</small>
           </span>
           <input
             type="checkbox"
@@ -56,7 +62,7 @@ export default function AutoReplyPanel({ business, onSave, onClose }) {
           </div>
 
           <div className="field">
-            <label>🔑 Keyword replies <small>sent when the message contains a keyword</small></label>
+            <label>🔑 Keyword replies <small>checked before the automatic answers about prices, hours and bookings</small></label>
             {draft.rules.map((rule) => (
               <div className="rule" key={rule.id}>
                 <div className="rule-top">
@@ -98,7 +104,7 @@ export default function AutoReplyPanel({ business, onSave, onClose }) {
       </div>
 
       <footer className="panel-footer">
-        <span className="saved-note">{saved ? '✓ Saved' : ''}</span>
+        <span className="saved-note">{error || (saved ? '✓ Saved' : '')}</span>
         <button className="primary-btn" onClick={save}>Save</button>
       </footer>
     </aside>
