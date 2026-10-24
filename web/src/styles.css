@@ -435,3 +435,65 @@ fieldset:disabled { opacity: 0.5; }
   .side-panel { position: fixed; inset: 0; width: 100%; max-width: none; z-index: 10; }
   .autoreply-btn { padding: 6px 8px; }
 }
+
+/* ---- Interactive chat cards ---- */
+.bubble.has-card { min-width: 280px; }
+.card-box { margin-top: 6px; background: rgba(255,255,255,.75); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; white-space: normal; }
+.bubble-row.in .card-box { background: #f7f8fa; }
+.card-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--green-dark); margin-top: 2px; }
+.card-line { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.card-line:last-child { border-bottom: 0; }
+.card-line small { display: block; color: var(--muted); font-size: 12px; }
+.card-line.sold-out { opacity: .55; }
+.card-line.sold-out span { text-decoration: line-through; }
+.card-box.booking { border-left: 4px solid var(--green); gap: 2px; }
+.card-box.booking .mini-btn { align-self: flex-start; margin-top: 6px; }
+.card-error { color: #dc2626; font-size: 12px; }
+.grow { flex: 1; min-width: 0; }
+.nowrap { white-space: nowrap; }
+.mini-btn { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 2px 9px; font-size: 12px; white-space: nowrap; }
+.mini-btn:hover:not(:disabled) { background: var(--hover); }
+.mini-btn:disabled { opacity: .45; cursor: default; }
+.mini-btn.danger { color: #dc2626; }
+.mini-btn + .mini-btn { margin-left: 3px; }
+.slot-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.slot-option { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+select.slot-option { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 5px; }
+.slot { border: 1px solid var(--green); color: var(--green-dark); background: #fff; border-radius: 6px; padding: 5px 0; font-weight: 600; }
+.slot:hover:not(:disabled) { background: var(--green); color: #fff; }
+.slot:disabled { border-color: var(--border); color: #b0bac0; background: #f5f6f6; cursor: default; text-decoration: line-through; }
+.slot.booked, .slot.booked:disabled { background: var(--green); color: #fff; border-color: var(--green); text-decoration: none; }
+
+/* Info panel price list */
+.price-line { display: flex; justify-content: space-between; gap: 12px; margin: 4px 0 !important; }
+
+/* Voice input */
+.send-btn.mic { background: transparent; color: var(--muted); font-size: 20px; }
+.send-btn.mic.listening { background: #dc2626; color: #fff; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, .2); } }
+a.icon-btn { text-decoration: none; }
+
+/* Modals */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(11, 20, 26, .55); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal { background: #fff; border-radius: 12px; padding: 22px 24px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.modal h3 { margin: 0; }
+.modal p { margin: 0; }
+.modal label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
+.modal input, .modal select { font: inherit; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; width: 100%; }
+.modal input:focus, .modal select:focus { outline: 2px solid var(--green); border-color: transparent; }
+.pin-input { font-size: 24px !important; letter-spacing: 10px; text-align: center; }
+.form-error { color: #dc2626; background: #fef2f2; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.modal-actions small { margin-right: auto; }
+.secondary-btn { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; }
+.secondary-btn:hover { background: var(--hover); }
+
+/* ---- Single Business Connect conversation ---- */
+.sender { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; }
+.sender.to { color: var(--green-dark); font-weight: 500; font-size: 11.5px; opacity: .8; }
+.context-bar { display: flex; align-items: center; gap: 8px; padding: 6px 16px; background: #e7f8f3; border-top: 1px solid var(--border); font-size: 13px; }
+.context-bar span { flex: 1; }
+.biz-line { gap: 10px; }
+.biz-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
+.chat-btn { color: var(--green-dark); border-color: var(--green); font-weight: 600; }
