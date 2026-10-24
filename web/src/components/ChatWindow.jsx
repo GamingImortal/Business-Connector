@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import Avatar from './Avatar.jsx'
 import { Ticks } from './Sidebar.jsx'
+import { formatTime } from '../api.js'
 
-export default function ChatWindow({ business, messages, typing, role, onSend, onBack, onOpenInfo, onOpenAutoReply }) {
+const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+
+// A WhatsApp-style conversation. Messages are { id, mine, text, createdAt, auto, status, card, sender }.
+// `sender` ({ name, avatar, color }) labels messages in a thread shared by several businesses.
+export default function ChatWindow({
+  title, avatar, color, subtitle, onOpenInfo, headerExtra, banner, note, context,
+  messages, typing, quickReplies = [], placeholder, onSend, onBack, renderCard,
+}) {
   const [text, setText] = useState('')
+  const [listening, setListening] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const recognitionRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -13,7 +23,8 @@ export default function ChatWindow({ business, messages, typing, role, onSend, o
 
   useEffect(() => {
     inputRef.current?.focus()
-  }, [role])
+    return () => recognitionRef.current?.abort()
+  }, [])
 
   const submit = (e) => {
     e.preventDefault()
@@ -23,57 +34,71 @@ export default function ChatWindow({ business, messages, typing, role, onSend, o
     setText('')
   }
 
-  const quickReplies = business.autoReply.enabled
-    ? business.autoReply.rules.map((r) => r.keywords.split(',')[0].trim()).filter(Boolean)
-    : []
-
-  // From the customer's view, their messages are "mine" (right side). From the business view, the business's are.
-  const mine = role === 'customer' ? 'client' : 'business'
+  // Voice input: speak a message and it is sent once you stop talking.
+  const toggleVoice = () => {
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+    const rec = new SpeechRecognition()
+    rec.lang = navigator.language || 'en-US'
+    rec.interimResults = true
+    rec.onresult = (e) => {
+      const transcript = Array.from(e.results).map((r) => r[0].transcript).join('')
+      setText(transcript)
+      if (e.results[e.results.length - 1].isFinal) {
+        onSend(transcript.trim())
+        setText('')
+      }
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recognitionRef.current = rec
+    rec.start()
+    setListening(true)
+  }
 
   return (
     <section className="chat">
       <header className="chat-header">
         <button className="icon-btn back-btn" onClick={onBack} title="Back">←</button>
         <div className="chat-header-info" onClick={onOpenInfo}>
-          <Avatar emoji={business.avatar} color={business.color} size={40} />
+          <Avatar emoji={avatar} color={color} size={40} />
           <div>
-            <div className="chat-name">{business.name}</div>
-            <div className="chat-status">
-              {typing ? <span className="typing-text">typing…</span> : `${business.category} · ⭐ ${business.rating} · click for info`}
-            </div>
+            <div className="chat-name">{title}</div>
+            <div className="chat-status">{typing ? <span className="typing-text">typing…</span> : subtitle}</div>
           </div>
         </div>
-        <button
-          className={`autoreply-btn ${business.autoReply.enabled ? 'on' : ''}`}
-          onClick={onOpenAutoReply}
-          title="Set up automated responses"
-        >
-          🤖 Auto-reply {business.autoReply.enabled ? 'ON' : 'OFF'}
-        </button>
+        {headerExtra}
       </header>
 
-      {role === 'business' && (
-        <div className="role-banner">
-          You are replying as <strong>{business.name}</strong>. Switch to "Customer" to chat as a client.
-        </div>
-      )}
+      {banner && <div className="role-banner">{banner}</div>}
 
       <div className="messages">
-        <div className="encryption-note">
-          🔒 This is a demo chat. Automated replies are set up by the business.
-        </div>
-        {messages.map((m) => (
-          <div key={m.id} className={`bubble-row ${m.from === mine ? 'out' : 'in'}`}>
-            <div className="bubble">
-              {m.auto && <div className="auto-tag">🤖 Automated reply</div>}
-              <span className="bubble-text">{formatText(m.text)}</span>
-              <span className="bubble-meta">
-                {m.time}
-                {m.from === 'client' && m.from === mine && <Ticks status={m.status} />}
-              </span>
+        {note && <div className="encryption-note">{note}</div>}
+        {messages.map((m, i) => {
+          const prev = messages[i - 1]
+          const showSender = m.sender && !m.mine && (!prev || prev.mine || prev.sender?.name !== m.sender.name)
+          // Outgoing messages say who they went to whenever that changes.
+          const prevOut = messages.slice(0, i).reverse().find((x) => x.mine)
+          const showTo = m.sender && m.mine && m.sender.name !== prevOut?.sender?.name
+          return (
+            <div key={m.id} className={`bubble-row ${m.mine ? 'out' : 'in'}`}>
+              <div className={`bubble ${m.card ? 'has-card' : ''}`}>
+                {showSender && <div className="sender" style={{ color: m.sender.color }}>{m.sender.avatar} {m.sender.name}</div>}
+                {showTo && <div className="sender to">to {m.sender.avatar} {m.sender.name}</div>}
+                {m.auto && !m.sender && <div className="auto-tag">🤖 Automated reply</div>}
+                <span className="bubble-text">{formatText(m.text)}</span>
+                {m.card && renderCard?.(m.card, m)}
+                <span className="bubble-meta">
+                  {m.auto && m.sender && <span title="Automated reply">🤖 </span>}
+                  {formatTime(m.createdAt)}
+                  {m.mine && m.status && <Ticks status={m.status} />}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         {typing && (
           <div className="bubble-row in">
             <div className="bubble typing-bubble"><span /><span /><span /></div>
@@ -82,7 +107,9 @@ export default function ChatWindow({ business, messages, typing, role, onSend, o
         <div ref={bottomRef} />
       </div>
 
-      {role === 'customer' && quickReplies.length > 0 && (
+      {context}
+
+      {quickReplies.length > 0 && (
         <div className="quick-replies">
           {quickReplies.map((q) => (
             <button key={q} className="chip" onClick={() => onSend(q)}>{q}</button>
@@ -96,9 +123,14 @@ export default function ChatWindow({ business, messages, typing, role, onSend, o
           ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={role === 'customer' ? 'Type a message' : `Reply as ${business.name}`}
+          placeholder={listening ? 'Listening… speak now' : placeholder}
         />
-        <button type="submit" className="send-btn" title="Send" disabled={!text.trim()}>➤</button>
+        {SpeechRecognition && !text.trim() ? (
+          <button type="button" className={`send-btn mic ${listening ? 'listening' : ''}`} onClick={toggleVoice}
+            title={listening ? 'Stop listening' : 'Speak your message'}>🎤</button>
+        ) : (
+          <button type="submit" className="send-btn" title="Send" disabled={!text.trim()}>➤</button>
+        )}
       </form>
     </section>
   )
