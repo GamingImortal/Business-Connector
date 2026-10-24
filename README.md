@@ -234,13 +234,20 @@ Review      { id, bookingId, businessId, staffId, stars, breakdown{}, comment }
 
 ---
 
-## 11. Getting Started (planned)
+## 11. Getting Started
+
+The mock WhatsApp Web-style app lives in [`web/`](web/) (React + Vite, using yarn).
 
 ```bash
-# coming soon
-npm install
-npm run dev
+cd web
+yarn install
+yarn dev        # http://localhost:5173
 ```
+
+- Chat with 5 demo businesses as a **Customer**; replies come from each business's automated responses.
+- Click **🤖 Auto-reply** in a chat header to set the greeting, keyword replies and fallback message.
+- Switch **View as → Business** to reply manually as that business.
+- Data is saved in the browser's localStorage; use **↺** to reset the demo.
 
 ---
 
