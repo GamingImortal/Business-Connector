@@ -236,18 +236,84 @@ Review      { id, bookingId, businessId, staffId, stars, breakdown{}, comment }
 
 ## 11. Getting Started
 
-The mock WhatsApp Web-style app lives in [`web/`](web/) (React + Vite, using yarn).
+The project has three parts that run side by side:
 
-```bash
-cd web
-yarn install
-yarn dev        # http://localhost:5173
+| Folder | What it is | URL |
+|---|---|---|
+| [`backend/`](backend/) | Go REST API that stores everything in SQLite (`business-connect.db`) | http://localhost:8080 |
+| [`web/`](web/) | WhatsApp Web-style **chat platform** for customers and business owners | http://localhost:5173 |
+| [`dashboard/`](dashboard/) | **Business dashboard** for offerings, prices, calendar, reservations and messages | http://localhost:5174 |
+
+```
+ chat platform (web)  ──┐
+                        ├──  /api  ──►  Go backend  ──►  SQLite
+ dashboard            ──┘
 ```
 
-- Chat with 5 demo businesses as a **Customer**; replies come from each business's automated responses.
-- Click **🤖 Auto-reply** in a chat header to set the greeting, keyword replies and fallback message.
-- Switch **View as → Business** to reply manually as that business.
-- Data is saved in the browser's localStorage; use **↺** to reset the demo.
+Both frontends forward `/api` requests to the backend through the Vite dev server, so start the backend first. You need Go 1.25+, Node.js and yarn. Use three terminals:
+
+```bash
+# 1. Backend (creates and seeds business-connect.db on first run)
+cd backend
+go run .                  # flags: -addr :8080  -db business-connect.db
+
+# 2. Chat platform
+cd web
+yarn install
+yarn dev                  # http://localhost:5173
+
+# 3. Business dashboard
+cd dashboard
+yarn install
+yarn dev                  # http://localhost:5174
+```
+
+To reset the demo, stop the backend and delete `backend/business-connect.db*`. Run the backend tests with `cd backend && go test ./...`.
+
+### Demo businesses
+Six businesses are seeded: Fresh Cuts Barbershop, **Mama's Kitchen** (a restaurant), Tendai Plumbing, Glow Beauty Studio, Maths with Ruvimbo and Sparkle Cleaning Co. A few bookings are created around today's date. **Every demo business uses the PIN `1234`.**
+
+### Chat platform: customers
+Customers have **one conversation, with Business Connect**, which routes them to the right business:
+- Say what you need: *"I need a haircut"*, *"I'm hungry"* or *"my geyser is leaking"*. Business Connect suggests matching businesses, and you tap **💬 Chat**.
+- Or name a business: *"Mama's Kitchen"*, or *"how much is a fade at Fresh Cuts?"*. Your message goes straight to that business.
+- Replies from each business appear in the same thread, labelled with the business's name. A bar above the message box shows who you're talking to.
+- While you're talking to a business, its automated replies answer from the data it listed on the dashboard:
+  - *"menu"* or *"prices"*: the menu or price list card
+  - *"how much is the oxtail?"*: the price of one item
+  - *"hours"*, *"location"*, *"phone"*
+  - *"book"* or *"book a table"*: a card with open times. Tap a time to book. Restaurants also let you pick the number of guests.
+  - *"table for 4 on Friday at 19:00"*: books straight away if there's space, and suggests other times if not
+- Say *"back"*, or tap **✕ Leave**, to go back to Business Connect. *"I need a plumber"* while talking to a restaurant starts a new search.
+- *"my bookings"* lists your bookings with every business, with cancel buttons.
+- The first time you send a message, it asks for your name. Tap 🎤 to speak instead of typing. This uses the browser's speech recognition and works in Chrome and Edge.
+- Owners still get each customer's messages in their own inbox, but only the messages meant for their business.
+
+### Chat platform: business owners
+- Switch **View as → 🏪 Business owner**, pick your business and enter your **PIN**.
+- **🤖 My assistant** is a private chat about your own business. Try *today*, *tomorrow*, *saturday*, *upcoming*, *slots friday*, *stats*, *messages*, *menu*, *sold out oxtail*, *available oxtail*, *confirm 12*, *done 12*, *no show 12* and *cancel 12*.
+- Your customers' chats show up in the list. Reply to them as your business.
+- **Auto-reply** sets the greeting, keyword replies and fallback message. 📊 opens the dashboard and 🚪 logs out.
+
+### Business dashboard
+- **Log in** with your business and PIN, or **List your business** to register a new one: a service business or a restaurant, with your own PIN.
+- **Overview:** today's bookings, the week ahead, unread messages and quick actions (done, no-show, cancel).
+- **Offerings:** add services, products or menu items with prices, durations and categories. Turn an item off when it's sold out.
+- **Calendar:** a week view of reservations. Click a booking to edit it, or **+ Add** for walk-ins and phone bookings.
+- **Reservations:** search and filter every booking. Bookings made in the chat are tagged *via chat*.
+- **Messages:** read and reply to customer chats.
+- **Settings:** profile, opening hours, slot length and capacity (seats for restaurants, bookings at the same time for services), automated replies, and changing your PIN.
+
+How bookings are checked: a booking must fall within opening hours, and the slots it overlaps must have enough capacity left. Restaurants count capacity in guests, so a table for 4 uses 4 seats. Owners can override this from the dashboard. When an owner cancels, completes or moves a chat booking, the customer gets a message in the chat.
+
+### API overview
+| Who | Endpoints |
+|---|---|
+| Public | `POST /api/concierge` (the single customer conversation), `GET /api/customers/{cid}/thread?after=`, `GET /api/businesses`, `POST /api/businesses` (register), `GET /api/businesses/{id}`, `GET /api/businesses/{id}/availability?date=&party=`, `GET/POST /api/businesses/{id}/messages`, `POST /api/businesses/{id}/reservations`, `POST /api/businesses/{id}/reservations/{rid}/cancel`, `GET /api/customers/{cid}/conversations` |
+| Auth | `POST /api/auth/login` (`businessId` + `pin` returns a token), `POST /api/auth/logout` |
+| Owner (`Authorization: Bearer <token>`) | `GET/PUT /api/owner/business`, `PUT /api/owner/pin`, CRUD `/api/owner/offerings`, CRUD `/api/owner/reservations`, `GET /api/owner/availability`, `GET /api/owner/conversations`, `GET/POST /api/owner/conversations/{cid}`, `POST /api/owner/assistant` |
+
+> **Demo-grade security:** PINs are salted and hashed, and 5 wrong PINs lock a business out for 5 minutes. But customers are identified only by an ID stored in their browser, and there is no HTTPS. Add real authentication before using this with real customers.
 
 ---
 
